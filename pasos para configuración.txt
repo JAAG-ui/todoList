@@ -1,0 +1,467 @@
+COMO CONFIGURAR WEBPACK
+1. En VScode, abrir la ventana de comandos y ubicarse en la carpeta donde se creará el root
+2. Verificar si se tiene node con (node --version) y npm (npm --version) - Si no se tienen deben instalarse
+3. Ejecutar (npm init) para crear el archivo package.json de configuración
+4. Ejecutar (npm install webpack webpack-cli --save-dev) para instalar webpack y crear la carpeta node_modules, package-lock.json y las dependencias en package.json
+5. En package.json en "scripts" debajo de "test" agregamos ("build": "webpack") - ahora cuando ejecute el comando build, ejecutará webpack
+6. Ejecutamos (npm i -D html-loaded html-webpack-plugin) que me permitirá colocar el html de manera automática en la carpeta "dist"
+7. Creamos el archivo (webpack.config.js (-nombre asociado al punto 5-)) en la raíz no dentro de src y dentro colocamos: (ver notas en el código):
+Esto además, crea automáticamente el script dentro del html para llamar al main.js
+
+const HtmlWebPackPlugin = require("html-webpack-plugin");
+module.exports = {
+  mode: "development", // puede cambiar a "production"
+  module: {
+    rules: [
+      {
+        test: /\.html$/i, // Aplica esta regla si es un archivo con extensión html
+        loader: "html-loader",
+        options: {
+          attributes: false,
+        },
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebPackPlugin({
+      template: "./src/index.html", // Toma la ubicación del html
+      filename: "./index.html", // El nombre con el que aparecerá en la carpeta dist
+    }),
+  ],
+};
+8. Ejecutamos (npm run build) para crear la carpeta dist, donde estarán los archivos main.js (que acumula todo lo referido a js) e index.html (con el script ya colocado)
+Luego podemos borrar la carpeta dist si queremos, ya que se generará cada vez que ejecutemos npm run build
+9. Instalamos (npm install --save-dev webpack-dev-server) para instalar el servidor que permitirá mostrar automáticamente los cambios que hagamos a los archivos sin necesidad de ejecutar npm run build a cada rato
+10. En package.json en "scripts" creamos uno nuevo "start": "webpack serve".
+11. Ya podemos utilizar el nuevo comando "npm start" (no cerrar la ventana de comandos)
+12. En la barra de direcciones de Chrome colocar "http://localhost:8080/" ahora cualquier cambio se reflejara en el server
+13. Para que los archivos css también se incluyan debe instalarse (npm i -D css-loader style-loader), luego se importa el css (import "../css/componentes.css";) en el archivo componentes.js
+14. Luego se modifica el archivo webpack.config.js:
+const HtmlWebPackPlugin = require("html-webpack-plugin");
+module.exports = {
+  mode: "development", // puede cambiar a "production"
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /\.html$/i, // Aplica esta regla si es un archivo con extensión html
+        loader: "html-loader",
+        options: {
+          attributes: false,
+          minimize: false,
+        },
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebPackPlugin({
+      template: "./src/index.html", // Toma la ubicación del html
+      filename: "./index.html", //
+    }),
+  ],
+};
+15. Para usar un archivo css global, creamos styles.css en el src, y hacemos mas instalaciones, con el objetivo de que styles este como un archivo a parte y no imbuido en el main.js
+16. Instalamos (npm i -D mini-css-extract-plugin) y hacemos la configuración en el archivo webpack.config.js:
+const HtmlWebPackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+module.exports = {
+  mode: "development", // puede cambiar a "production"
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        exclude: /styles\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /styles\.css$/i,
+        use: [MiniCssExtractPlugin.loader, "css-loader"],
+      },
+      {
+        test: /\.html$/i, // Aplica esta regla si es un archivo con extensión html
+        loader: "html-loader",
+        options: {
+          attributes: false,
+          minimize: false,
+        },
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebPackPlugin({
+      template: "./src/index.html", // Toma la ubicación del html
+      filename: "./index.html", //
+    }),
+    new MiniCssExtractPlugin({
+      filename: "[name].css",
+      ignoreOrder: false,
+    }),
+  ],
+};
+17. Pero para minimizar el css de manera automática se tiene que instalar: (npm i -D optimize-css-assets-webpack-plugin) y modificamos el webpack.config.js:
+Tener en cuenta que solo funciona con mode: "production"
+const HtmlWebPackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+module.exports = {
+  mode: "production", // puede cambiar a "production"
+  optimization: {
+    minimizer: [new OptimizeCssAssetsPlugin()],
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        exclude: /styles\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /styles\.css$/i,
+        use: [MiniCssExtractPlugin.loader, "css-loader"],
+      },
+      {
+        test: /\.html$/i, // Aplica esta regla si es un archivo con extensión html
+        loader: "html-loader",
+        options: {
+          attributes: false,
+          minimize: false,
+        },
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebPackPlugin({
+      template: "./src/index.html", // Toma la ubicación del html
+      filename: "./index.html", //
+    }),
+    new MiniCssExtractPlugin({
+      filename: "[name].css",
+      ignoreOrder: false,
+    }),
+  ],
+};
+18. Cuando se agreguen imagenes en el html debe instalarse: (npm i -D file-loader) configurarse el archivo:
+const HtmlWebPackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+module.exports = {
+  mode: "production", // puede cambiar a "production"
+  optimization: {
+    minimizer: [new OptimizeCssAssetsPlugin()],
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        exclude: /styles\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /styles\.css$/i,
+        use: [MiniCssExtractPlugin.loader, "css-loader"],
+      },
+      {
+        test: /\.html$/i, // Aplica esta regla si es un archivo con extensión html
+        loader: "html-loader",
+        options: {
+          attributes: false,
+          minimize: false,
+        },
+      },
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        loader: "file-loader",
+        options: {
+          esModule: false,
+        },
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebPackPlugin({
+      template: "./src/index.html", // Toma la ubicación del html
+      filename: "./index.html", //
+    }),
+    new MiniCssExtractPlugin({
+      filename: "[name].css",
+      ignoreOrder: false,
+    }),
+  ],
+};
+19. Pero lo anterior transporta la imagen como archivo suleto, y no dentro de la carpeta assets, para eso se instala: (npm i -D copy-webpack-plugin) y se configura el archivo:
+const HtmlWebPackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
+
+module.exports = {
+  mode: "production", // puede cambiar a "production"
+  optimization: {
+    minimizer: [new OptimizeCssAssetsPlugin()],
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        exclude: /styles\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /styles\.css$/i,
+        use: [MiniCssExtractPlugin.loader, "css-loader"],
+      },
+      {
+        test: /\.html$/i, // Aplica esta regla si es un archivo con extensión html
+        loader: "html-loader",
+        options: {
+          attributes: false,
+          minimize: false,
+        },
+      },
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        loader: "file-loader",
+        options: {
+          esModule: false,
+          name: "assets/[name].[ext]",
+        },
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebPackPlugin({
+      template: "./src/index.html", // Toma la ubicación del html
+      filename: "./index.html", //
+    }),
+    new MiniCssExtractPlugin({
+      filename: "[name].css",
+      ignoreOrder: false,
+    }),
+    new CopyPlugin({
+      patterns: [{ from: "src/assets", to: "assets/" }],
+    }),
+  ],
+};
+
+20. Luego ejecutar npx webpack para empaquetar todo.
+21. A veces es mejor tener 2 archivos de configuración de webpack uno de dev y otro de prod
+22. Para ello crear otro archivo webpack.prod.js y se agregan lineas de codigo al package.json
+ "build": "webpack --config webpack.prod.js", // Que sería para produccion
+ "build:dev": "webpack --config webpack.config.js", // Y este para desarrollo
+23. Luego se agrega "contenthash" a las instrucciones de crear archivos en el webpack.prod.js: (con ello nos aseguramos que cada vez que actualicemos la app, el navegador actualice lo ultimo, al encontrar un nombre de archivo diferente)
+
+const HtmlWebPackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
+
+module.exports = {
+  mode: "production", // puede cambiar a "production"
+  optimization: {
+    minimizer: [new OptimizeCssAssetsPlugin()],
+  },
+  output: {
+    filename: "main.[contenthash].js",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        exclude: /styles\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /styles\.css$/i,
+        use: [MiniCssExtractPlugin.loader, "css-loader"],
+      },
+      {
+        test: /\.html$/i, // Aplica esta regla si es un archivo con extensión html
+        loader: "html-loader",
+        options: {
+          attributes: false,
+          minimize: false,
+        },
+      },
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        loader: "file-loader",
+        options: {
+          esModule: false,
+          name: "assets/[name].[ext]",
+        },
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebPackPlugin({
+      template: "./src/index.html", // Toma la ubicación del html
+      filename: "./index.html", //
+    }),
+    new MiniCssExtractPlugin({
+      filename: "[name].[contenthash].css",
+      ignoreOrder: false,
+    }),
+    new CopyPlugin({
+      patterns: [{ from: "src/assets", to: "assets/" }],
+    }),
+  ],
+};
+
+24. Luego, para que nuestra aplicación sea compatible con otros navegadores se instala babel (npm install --save-dev babel-loader @babel/core)
+25. Luego se debe configurar el archivo de conf de webpack pero de producción webpack.prod.js y seguir las instrucciones de babel (https://babeljs.io/setup#installation)
+Allí se modifica el archivo webpack.prod.js, se crea un archivo babel.config.json, se le añade una instruccion y se instala (npm install @babel/preset-env --save-dev)
+26. Luego se instala el npm install babel-preset-minify --save-dev y se coloca la instruccion en el json de babel (https://babeljs.io/docs/en/babel-preset-minify)
+
+{
+  "presets": ["@babel/preset-env", "minify"]
+}
+27. Luego se instala (npm install babel-minify-webpack-plugin --save-dev) - (https://github.com/webpack-contrib/babel-minify-webpack-plugin) y modificamos el webpack.prod.js:
+
+const HtmlWebPackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
+const MinifyPlugin = require("babel-minify-webpack-plugin");
+
+module.exports = {
+  mode: "production", // puede cambiar a "production"
+  optimization: {
+    minimizer: [new OptimizeCssAssetsPlugin()],
+  },
+  output: {
+    filename: "main.[contenthash].js",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.m?js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "babel-loader",
+          options: {
+            presets: ["@babel/preset-env"],
+          },
+        },
+      },
+      {
+        test: /\.css$/i,
+        exclude: /styles\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /styles\.css$/i,
+        use: [MiniCssExtractPlugin.loader, "css-loader"],
+      },
+      {
+        test: /\.html$/i, // Aplica esta regla si es un archivo con extensión html
+        loader: "html-loader",
+        options: {
+          attributes: false,
+          minimize: false,
+        },
+      },
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        loader: "file-loader",
+        options: {
+          esModule: false,
+          name: "assets/[name].[ext]",
+        },
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebPackPlugin({
+      template: "./src/index.html", // Toma la ubicación del html
+      filename: "./index.html", //
+    }),
+    new MiniCssExtractPlugin({
+      filename: "[name].[contenthash].css",
+      ignoreOrder: false,
+    }),
+    new CopyPlugin({
+      patterns: [{ from: "src/assets", to: "assets/" }],
+    }),
+    new MinifyPlugin(),
+  ],
+};
+
+28. Finalmente, se creará una forma de eliminar la carpeta dist de manera automatica (npm install --save-dev clean-webpack-plugin) - (https://webpack.js.org/guides/output-management/#cleaning-up-the-dist-folder)
+const HtmlWebPackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
+const MinifyPlugin = require("babel-minify-webpack-plugin");
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+
+module.exports = {
+  mode: "production", // puede cambiar a "production"
+  optimization: {
+    minimizer: [new OptimizeCssAssetsPlugin()],
+  },
+  output: {
+    filename: "main.[contenthash].js",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.m?js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "babel-loader",
+          options: {
+            presets: ["@babel/preset-env"],
+          },
+        },
+      },
+      {
+        test: /\.css$/i,
+        exclude: /styles\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /styles\.css$/i,
+        use: [MiniCssExtractPlugin.loader, "css-loader"],
+      },
+      {
+        test: /\.html$/i, // Aplica esta regla si es un archivo con extensión html
+        loader: "html-loader",
+        options: {
+          attributes: false,
+          minimize: false,
+        },
+      },
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        loader: "file-loader",
+        options: {
+          esModule: false,
+          name: "assets/[name].[ext]",
+        },
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebPackPlugin({
+      template: "./src/index.html", // Toma la ubicación del html
+      filename: "./index.html", //
+    }),
+    new MiniCssExtractPlugin({
+      filename: "[name].[contenthash].css",
+      ignoreOrder: false,
+    }),
+    new CopyPlugin({
+      patterns: [{ from: "src/assets", to: "assets/" }],
+    }),
+    new MinifyPlugin(),
+    new CleanWebpackPlugin(),
+  ],
+};
+
+
+
+
+
